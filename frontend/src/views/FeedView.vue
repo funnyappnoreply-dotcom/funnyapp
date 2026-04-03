@@ -7,17 +7,14 @@
         <button @click="limparTag">×</button>
       </div>
     </div>
-
     <div v-if="carregando && posts.length === 0" class="loading-wrap">
       <div class="spinner" style="width:32px;height:32px;border-width:3px"></div>
     </div>
-
     <div v-else-if="posts.length === 0" class="vazio">
       <div class="vazio-icon">😶</div>
       <p>Nenhum post ainda. Seja o primeiro!</p>
       <router-link to="/novo" class="btn btn-amarelo" style="margin-top:16px">Postar agora</router-link>
     </div>
-
     <div v-else class="posts-grid">
       <PostCard
         v-for="post in posts"
@@ -26,7 +23,6 @@
         @deletar="deletarPost"
       />
     </div>
-
     <div v-if="temMais" class="carregar-mais">
       <button class="btn btn-outline" @click="carregarMais" :disabled="carregando">
         <span v-if="carregando" class="spinner"></span>
@@ -57,14 +53,14 @@ const carregar = async (reset = false) => {
     const params = { pagina: pagina.value, limite: 12 }
     if (tag.value) params.tag = tag.value
     const { data } = await api.get('/posts', { params })
-    posts.value = reset ? data.posts : [...posts.value, ...data.posts]
+    const novos = data.posts.sort(() => Math.random() - 0.5)
+    posts.value = reset ? novos : [...posts.value, ...novos]
     temMais.value = pagina.value < data.paginacao.totalPaginas
   } finally { carregando.value = false }
 }
 
 const carregarMais = () => { pagina.value++; carregar() }
 const limparTag = () => { tag.value = ''; router.push('/'); carregar(true) }
-
 const deletarPost = async (id) => {
   if (!confirm('Deletar este post?')) return
   try {
