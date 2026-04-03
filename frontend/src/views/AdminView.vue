@@ -5,7 +5,6 @@
       <span class="admin-badge">{{ auth.usuario?.perfil === 'superadmin' ? '⭐ Super Admin' : '🛡️ Admin' }}</span>
     </div>
 
-    <!-- Tabs -->
     <div class="tabs">
       <button v-for="t in tabs" :key="t.id" :class="['tab', { ativo: aba === t.id }]" @click="aba = t.id">
         {{ t.icon }} {{ t.label }}
@@ -69,25 +68,20 @@
               <tr v-for="u in usuarios" :key="u._id">
                 <td><span class="usuario-chip">@{{ u.username }}</span></td>
                 <td style="font-size:0.82rem;color:var(--cinza-400)">{{ u.email }}</td>
-                <td>
-                  <span :class="['perfil-badge', u.perfil]">{{ u.perfil }}</span>
-                </td>
-                <td>
-                  <span :class="['status-badge', u.banido ? 'banido' : 'ativo']">{{ u.banido ? 'Banido' : 'Ativo' }}</span>
-                </td>
+                <td><span :class="['perfil-badge', u.perfil]">{{ u.perfil }}</span></td>
+                <td><span :class="['status-badge', u.banido ? 'banido' : 'ativo']">{{ u.banido ? 'Banido' : 'Ativo' }}</span></td>
                 <td style="font-size:0.78rem;color:var(--cinza-400)">{{ formatarData(u.createdAt) }}</td>
                 <td>
                   <div class="acoes-cel">
-                    <!-- Dar/tirar admin (só superadmin) -->
                     <template v-if="isSuperAdmin && u._id !== auth.usuario._id">
                       <button v-if="u.perfil === 'usuario'" class="btn btn-sm" style="background:rgba(99,102,241,0.2);color:#a5b4fc;border:none" @click="alterarPerfil(u, 'admin')">+ Admin</button>
                       <button v-if="u.perfil === 'admin'" class="btn btn-sm" style="background:rgba(99,102,241,0.2);color:#a5b4fc;border:none" @click="alterarPerfil(u, 'usuario')">- Admin</button>
                       <button v-if="u.perfil === 'admin'" class="btn btn-sm" style="background:rgba(255,214,0,0.15);color:var(--amarelo);border:none" @click="alterarPerfil(u, 'superadmin')">+ Super</button>
                       <button v-if="u.perfil === 'superadmin'" class="btn btn-sm" style="background:rgba(255,214,0,0.15);color:var(--amarelo);border:none" @click="alterarPerfil(u, 'admin')">- Super</button>
                     </template>
-                    <!-- Banir/desbanir -->
                     <button v-if="!u.banido && u._id !== auth.usuario._id && u.perfil !== 'superadmin'" class="btn btn-sm btn-vermelho" @click="abrirModalBanir(u)">🔨 Banir</button>
                     <button v-if="u.banido" class="btn btn-sm" style="background:rgba(34,197,94,0.15);color:#4ade80;border:none" @click="desbanir(u)">✅ Desbanir</button>
+                    <button v-if="isSuperAdmin && u._id !== auth.usuario._id && u.perfil !== 'superadmin'" class="btn btn-sm btn-vermelho" style="background:rgba(180,0,0,0.4)" @click="excluirUsuario(u)">🗑 Excluir</button>
                   </div>
                 </td>
               </tr>
@@ -307,6 +301,15 @@ const desbanir = async (u) => {
   } catch (e) { alert(e.response?.data?.error || 'Erro.') }
 }
 
+const excluirUsuario = async (u) => {
+  if (!confirm(`Excluir permanentemente a conta de @${u.username}? Todos os posts também serão deletados!`)) return
+  try {
+    await api.delete(`/admin/usuarios/${u._id}`)
+    usuarios.value = usuarios.value.filter(x => x._id !== u._id)
+    stats.value.totalUsuarios = Math.max(0, (stats.value.totalUsuarios || 1) - 1)
+  } catch (e) { alert(e.response?.data?.error || 'Erro ao excluir.') }
+}
+
 const analisar = async (d, status, deletar) => {
   try {
     await api.put(`/admin/denuncias/${d._id}`, { status, deletarPost: deletar })
@@ -329,20 +332,17 @@ onMounted(() => {
 .admin-header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
 .admin-header h1 { font-family: var(--fonte-titulo); font-size: 1.5rem; }
 .admin-badge { background: rgba(99,102,241,0.2); color: #a5b4fc; padding: 4px 12px; border-radius: 20px; font-size: 0.82rem; font-weight: 600; }
-
 .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--cinza-700); }
 .tab { padding: 10px 18px; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-family: var(--fonte); font-size: 0.88rem; color: var(--cinza-400); font-weight: 500; transition: all var(--transition); display: flex; align-items: center; gap: 6px; }
 .tab:hover { color: var(--branco); }
 .tab.ativo { color: var(--amarelo); border-bottom-color: var(--amarelo); }
 .tab-badge { background: var(--vermelho); color: #fff; font-size: 0.7rem; padding: 1px 6px; border-radius: 20px; }
-
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
 .stat-card { background: var(--cinza-900); border: 1px solid var(--cinza-700); border-radius: var(--radius-md); padding: 18px; }
 .stat-card.vermelho .stat-num { color: var(--vermelho); }
 .stat-card.cinza .stat-num { color: var(--cinza-400); }
 .stat-num { font-size: 2rem; font-weight: 700; line-height: 1; }
 .stat-label { font-size: 0.78rem; color: var(--cinza-400); margin-top: 6px; }
-
 .filtros-bar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
 .tabela-wrap { overflow-x: auto; }
 .tabela { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
@@ -350,27 +350,21 @@ onMounted(() => {
 .tabela td { padding: 12px 14px; border-bottom: 1px solid var(--cinza-800); vertical-align: middle; }
 .tabela tr:last-child td { border-bottom: none; }
 .tabela tr:hover td { background: rgba(255,255,255,0.02); }
-
 .usuario-chip { font-size: 0.85rem; font-weight: 600; color: var(--branco); }
 .acoes-cel { display: flex; gap: 6px; flex-wrap: wrap; }
-
 .perfil-badge { font-size: 0.72rem; padding: 3px 8px; border-radius: 20px; font-weight: 500; }
 .perfil-badge.usuario { background: var(--cinza-800); color: var(--cinza-200); }
 .perfil-badge.admin { background: rgba(99,102,241,0.2); color: #a5b4fc; }
 .perfil-badge.superadmin { background: rgba(255,214,0,0.15); color: var(--amarelo); }
-
 .status-badge { font-size: 0.72rem; padding: 3px 8px; border-radius: 20px; font-weight: 500; }
 .status-badge.ativo { background: rgba(34,197,94,0.15); color: #4ade80; }
 .status-badge.banido { background: rgba(255,68,68,0.15); color: var(--vermelho); }
 .status-badge.pendente { background: rgba(255,214,0,0.15); color: var(--amarelo); }
 .status-badge.analisada { background: rgba(34,197,94,0.15); color: #4ade80; }
 .status-badge.ignorada { background: var(--cinza-800); color: var(--cinza-400); }
-
 .motivo-badge { font-size: 0.75rem; padding: 3px 8px; border-radius: 20px; background: rgba(255,68,68,0.15); color: #ff8888; }
-
 .loading-wrap { display: flex; justify-content: center; padding: 40px; }
 .vazio { text-align: center; padding: 40px; color: var(--cinza-400); font-size: 0.9rem; }
-
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 20px; }
 .modal-box { background: var(--cinza-900); border: 1px solid var(--cinza-600); border-radius: var(--radius-lg); padding: 24px; width: 100%; max-width: 400px; }
 .modal-box h3 { font-size: 1rem; }
