@@ -2,7 +2,8 @@
   <div class="post-card">
     <div class="post-header">
       <router-link :to="`/u/${post.autor.username}`" class="autor-link">
-        <div class="avatar-placeholder" :style="avatarStyle">
+        <img v-if="post.autor.avatar" :src="post.autor.avatar" class="avatar-img" />
+        <div v-else class="avatar-placeholder" :style="avatarStyle">
           {{ post.autor.username[0].toUpperCase() }}
         </div>
         <div>
@@ -160,6 +161,8 @@ const enviarDenuncia = async () => {
 .post-data { font-size: 0.75rem; color: var(--cinza-400); }
 .badge-admin { font-size: 0.65rem; background: rgba(59,130,246,0.2); color: #60a5fa; padding: 2px 6px; border-radius: 20px; font-weight: 500; }
 .badge-superadmin { font-size: 0.65rem; background: rgba(255,214,0,0.2); color: var(--amarelo); padding: 2px 6px; border-radius: 20px; font-weight: 500; }
+
+.avatar-img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
 
 .header-acoes { display: flex; gap: 4px; }
 .btn-acao-icon { background: none; border: none; cursor: pointer; font-size: 1rem; padding: 5px 8px; border-radius: var(--radius-sm); transition: all var(--transition); color: var(--cinza-400); }
