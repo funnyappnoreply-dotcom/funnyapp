@@ -7,13 +7,24 @@
       <div v-if="erro" class="alerta alerta-erro">{{ erro }}</div>
 
       <div class="avatar-section">
-        <div class="avatar-grande avatar-placeholder" style="width:80px;height:80px;font-size:2rem;background:var(--cinza-700)">
-          {{ auth.usuario?.username?.[0]?.toUpperCase() }}
+        <div class="avatar-wrapper" @click="triggerUpload">
+          <img v-if="auth.usuario?.avatar" :src="auth.usuario.avatar" class="avatar-grande" />
+          <div v-else class="avatar-grande avatar-placeholder" style="width:80px;height:80px;font-size:2rem;background:var(--cinza-700)">
+            {{ auth.usuario?.username?.[0]?.toUpperCase() }}
+          </div>
+          <div class="avatar-overlay">
+            <span>📷</span>
+          </div>
         </div>
+        <input ref="inputFoto" type="file" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none" @change="uploadAvatar" />
         <div class="avatar-info">
           <div class="username">@{{ auth.usuario?.username }}</div>
           <div class="email">{{ auth.usuario?.email }}</div>
           <div v-if="isAdmin" class="perfil-badge">{{ auth.usuario?.perfil === 'superadmin' ? '⭐ Super Admin' : '🛡️ Admin' }}</div>
+          <button class="btn-trocar-foto" @click="triggerUpload" :disabled="enviandoFoto">
+            <span v-if="enviandoFoto" class="spinner" style="border-top-color:var(--amarelo)"></span>
+            <span v-else>Trocar foto</span>
+          </button>
         </div>
       </div>
 
@@ -30,10 +41,7 @@
         </button>
       </form>
 
-      <!-- Botão de sair — visível só no mobile -->
-      <button class="btn-sair-mobile" @click="sair">
-        ⏻ Sair da conta
-      </button>
+      <button class="btn-sair-mobile" @click="sair">⏻ Sair da conta</button>
 
       <div class="posts-section">
         <h3>Meus posts ({{ meusPosts.length }})</h3>
@@ -61,11 +69,37 @@ const auth = useAuthStore()
 const router = useRouter()
 const form = ref({ bio: auth.usuario?.bio || '' })
 const salvando = ref(false)
+const enviandoFoto = ref(false)
 const sucesso = ref(null)
 const erro = ref(null)
 const meusPosts = ref([])
+const inputFoto = ref(null)
 
 const isAdmin = computed(() => ['admin', 'superadmin'].includes(auth.usuario?.perfil))
+
+const triggerUpload = () => inputFoto.value?.click()
+
+const uploadAvatar = async (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+  enviandoFoto.value = true
+  sucesso.value = null
+  erro.value = null
+  try {
+    const formData = new FormData()
+    formData.append('avatar', file)
+    const { data } = await api.put('/usuarios/me', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    auth.atualizarUsuario(data.usuario)
+    sucesso.value = 'Foto atualizada!'
+  } catch (e) {
+    erro.value = e.response?.data?.error || 'Erro ao enviar foto.'
+  } finally {
+    enviandoFoto.value = false
+    inputFoto.value.value = ''
+  }
+}
 
 const salvar = async () => {
   salvando.value = true
@@ -99,6 +133,55 @@ onMounted(async () => {
 .perfil-card h2 { font-family: var(--fonte-titulo); font-size: 1.3rem; margin-bottom: 24px; }
 
 .avatar-section { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--cinza-700); }
+
+.avatar-wrapper {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.avatar-grande {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.avatar-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  font-size: 1.4rem;
+}
+.avatar-wrapper:hover .avatar-overlay { opacity: 1; }
+
+.btn-trocar-foto {
+  margin-top: 8px;
+  padding: 4px 12px;
+  background: transparent;
+  border: 1px solid var(--amarelo);
+  color: var(--amarelo);
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-family: var(--fonte);
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-trocar-foto:hover { background: rgba(255,200,0,0.1); }
+
 .username { font-weight: 700; font-size: 1rem; }
 .email { font-size: 0.82rem; color: var(--cinza-400); margin-top: 2px; }
 .perfil-badge { font-size: 0.75rem; color: var(--amarelo); margin-top: 4px; }
