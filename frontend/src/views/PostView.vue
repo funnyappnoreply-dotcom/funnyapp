@@ -13,10 +13,10 @@
       <button class="btn-voltar" @click="$router.back()">← Voltar</button>
 
       <div class="post-detalhe card">
-        <!-- Header -->
         <div class="post-header">
           <router-link :to="`/u/${post.autor.username}`" class="autor-link">
-            <div class="avatar-placeholder" style="width:42px;height:42px;font-size:1rem;background:var(--cinza-700)">
+            <img v-if="post.autor.avatar" :src="post.autor.avatar" class="avatar-img" />
+            <div v-else class="avatar-placeholder" style="width:42px;height:42px;font-size:1rem;background:var(--cinza-700)">
               {{ post.autor.username[0].toUpperCase() }}
             </div>
             <div>
@@ -26,10 +26,8 @@
           </router-link>
         </div>
 
-        <!-- Imagem -->
         <img :src="post.imagem" :alt="post.legenda" class="post-imagem" />
 
-        <!-- Ações -->
         <div class="post-acoes">
           <button :class="['btn-acao', { curtido: jaCurtiu }]" @click="curtir">
             {{ jaCurtiu ? '❤️' : '🤍' }} {{ totalCurtidas }}
@@ -37,21 +35,17 @@
           <span class="post-views">👁 {{ post.visualizacoes }}</span>
         </div>
 
-        <!-- Legenda -->
         <div v-if="post.legenda" class="post-legenda">
           <span class="autor-bold">@{{ post.autor.username }}</span> {{ post.legenda }}
         </div>
 
-        <!-- Tags -->
         <div v-if="post.tags?.length" class="post-tags">
           <router-link v-for="tag in post.tags" :key="tag" :to="`/?tag=${tag}`" class="tag">#{{ tag }}</router-link>
         </div>
 
-        <!-- Comentários -->
         <div class="comentarios-section">
           <h3>Comentários ({{ post.comentarios?.length || 0 }})</h3>
 
-          <!-- Formulário comentar -->
           <div v-if="auth.autenticado" class="comentar-form">
             <input v-model="novoComentario" type="text" class="form-input" placeholder="Adicione um comentário..." maxlength="300" @keyup.enter="comentar" />
             <button class="btn btn-amarelo btn-sm" @click="comentar" :disabled="enviando || !novoComentario.trim()">
@@ -63,10 +57,10 @@
             <router-link to="/login">Entre para comentar</router-link>
           </div>
 
-          <!-- Lista de comentários -->
           <div class="comentarios-lista">
             <div v-for="c in post.comentarios" :key="c._id" class="comentario">
-              <div class="avatar-placeholder" style="width:30px;height:30px;font-size:0.75rem;background:var(--cinza-700);flex-shrink:0">
+              <img v-if="c.autor?.avatar" :src="c.autor.avatar" class="avatar-img-sm" />
+              <div v-else class="avatar-placeholder" style="width:30px;height:30px;font-size:0.75rem;background:var(--cinza-700);flex-shrink:0">
                 {{ c.autor?.username?.[0]?.toUpperCase() }}
               </div>
               <div class="comentario-conteudo">
@@ -144,6 +138,8 @@ onMounted(async () => {
 .autor-link { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--branco); }
 .autor-nome { font-weight: 700; font-size: 0.95rem; }
 .post-data { font-size: 0.78rem; color: var(--cinza-400); }
+.avatar-img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; }
+.avatar-img-sm { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
 .post-imagem { width: 100%; display: block; max-height: 700px; object-fit: contain; background: var(--cinza-800); }
 .post-acoes { display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
 .btn-acao { background: var(--cinza-800); border: none; border-radius: var(--radius-full); padding: 8px 16px; cursor: pointer; font-size: 0.9rem; color: var(--cinza-200); transition: all var(--transition); }
@@ -154,7 +150,6 @@ onMounted(async () => {
 .autor-bold { font-weight: 700; color: var(--branco); margin-right: 6px; }
 .post-tags { display: flex; gap: 8px; padding: 0 16px 12px; flex-wrap: wrap; }
 .tag { font-size: 0.82rem; color: var(--amarelo); text-decoration: none; }
-
 .comentarios-section { border-top: 1px solid var(--cinza-700); padding: 16px; }
 .comentarios-section h3 { font-size: 0.95rem; margin-bottom: 14px; color: var(--cinza-200); }
 .comentar-form { display: flex; gap: 8px; margin-bottom: 20px; }
