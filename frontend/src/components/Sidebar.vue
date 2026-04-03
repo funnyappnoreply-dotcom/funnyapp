@@ -46,7 +46,10 @@
         <button class="btn-sair" @click="sair" title="Sair">⏻</button>
       </template>
       <template v-else>
-        <router-link to="/login" class="btn btn-amarelo btn-full">Entrar</router-link>
+        <div class="footer-auth">
+          <router-link to="/login" class="btn btn-amarelo btn-full">Entrar</router-link>
+          <router-link to="/registro" class="btn btn-outline btn-full" style="margin-top:8px">Criar conta</router-link>
+        </div>
       </template>
     </div>
   </aside>
@@ -103,6 +106,7 @@ const sair = () => { auth.logout(); router.push('/login') }
 .busca-badge { margin-left: auto; font-size: 0.65rem; background: rgba(255,214,0,0.2); color: var(--amarelo); padding: 2px 6px; border-radius: 20px; }
 
 .sidebar-footer { padding: 12px; border-top: 1px solid var(--cinza-700); display: flex; align-items: center; gap: 8px; }
+.footer-auth { width: 100%; }
 .footer-usuario { display: flex; align-items: center; gap: 10px; text-decoration: none; flex: 1; min-width: 0; }
 .footer-info { min-width: 0; }
 .footer-nome { font-size: 0.82rem; font-weight: 600; color: var(--branco); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
