@@ -3,3 +3,9 @@
   "outputDirectory": "dist",
   "installCommand": "echo skip"
 }
+
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
