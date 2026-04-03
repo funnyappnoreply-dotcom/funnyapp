@@ -27,7 +27,8 @@
       <input v-model="buscaQuery" type="text" class="form-input busca-input" placeholder="🔍 Buscar usuário..." @input="buscar" />
       <div v-if="resultados.length" class="busca-resultados">
         <router-link v-for="u in resultados" :key="u._id" :to="`/u/${u.username}`" class="busca-item" @click="limparBusca">
-          <div class="avatar-placeholder" style="width:30px;height:30px;font-size:0.75rem">{{ u.username[0].toUpperCase() }}</div>
+          <img v-if="u.avatar" :src="u.avatar" class="busca-avatar-img" />
+          <div v-else class="avatar-placeholder" style="width:30px;height:30px;font-size:0.75rem">{{ u.username[0].toUpperCase() }}</div>
           <span>@{{ u.username }}</span>
           <span v-if="u.perfil !== 'usuario'" class="busca-badge">{{ u.perfil }}</span>
         </router-link>
@@ -37,7 +38,8 @@
     <div class="sidebar-footer">
       <template v-if="auth.autenticado">
         <router-link to="/perfil" class="footer-usuario">
-          <div class="avatar-placeholder" style="width:36px;height:36px;font-size:0.9rem">{{ auth.usuario?.username?.[0]?.toUpperCase() }}</div>
+          <img v-if="auth.usuario?.avatar" :src="auth.usuario.avatar" class="footer-avatar-img" />
+          <div v-else class="avatar-placeholder" style="width:36px;height:36px;font-size:0.9rem">{{ auth.usuario?.username?.[0]?.toUpperCase() }}</div>
           <div class="footer-info">
             <div class="footer-nome">@{{ auth.usuario?.username }}</div>
             <div v-if="isAdmin" class="footer-perfil">{{ auth.usuario?.perfil === 'superadmin' ? '⭐ Super Admin' : '🛡️ Admin' }}</div>
@@ -104,6 +106,7 @@ const sair = () => { auth.logout(); router.push('/login') }
 .busca-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; text-decoration: none; color: var(--branco); font-size: 0.85rem; transition: background var(--transition); }
 .busca-item:hover { background: var(--cinza-700); }
 .busca-badge { margin-left: auto; font-size: 0.65rem; background: rgba(255,214,0,0.2); color: var(--amarelo); padding: 2px 6px; border-radius: 20px; }
+.busca-avatar-img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
 
 .sidebar-footer { padding: 12px; border-top: 1px solid var(--cinza-700); display: flex; align-items: center; gap: 8px; }
 .footer-auth { width: 100%; }
@@ -111,6 +114,7 @@ const sair = () => { auth.logout(); router.push('/login') }
 .footer-info { min-width: 0; }
 .footer-nome { font-size: 0.82rem; font-weight: 600; color: var(--branco); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .footer-perfil { font-size: 0.72rem; color: var(--amarelo); margin-top: 1px; }
+.footer-avatar-img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
 .btn-sair { background: none; border: none; cursor: pointer; font-size: 1.1rem; color: var(--cinza-400); padding: 6px; border-radius: var(--radius-sm); transition: all var(--transition); }
 .btn-sair:hover { color: var(--vermelho); background: rgba(255,68,68,0.1); }
 </style>
