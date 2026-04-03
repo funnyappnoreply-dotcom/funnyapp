@@ -1,5 +1,5 @@
 <template>
-  <div v-if="auth.autenticado" class="app-layout">
+  <div class="app-layout">
     <Sidebar />
     <main class="main">
       <router-view v-slot="{ Component }">
@@ -8,15 +8,6 @@
         </transition>
       </router-view>
     </main>
-    <NavbarMobile />
-  </div>
-
-  <div v-else>
-    <router-view v-slot="{ Component }">
-      <transition name="fade" mode="out-in">
-        <component :is="Component" />
-      </transition>
-    </router-view>
     <NavbarMobile />
   </div>
 </template>
