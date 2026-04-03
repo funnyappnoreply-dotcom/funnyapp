@@ -24,19 +24,19 @@ const registrar = async (req, res) => {
     const tokenConfirmacao = usuario.gerarTokenConfirmacao()
     await usuario.save()
 
-    // Enviar email de confirmação
-    try {
-      await enviarEmailConfirmacao(email, username, tokenConfirmacao)
-    } catch (e) {
-      console.log('Erro ao enviar email:', e.message)
-    }
-
     const token = gerarToken(usuario._id)
+
+    // Responde imediatamente — email é enviado de forma assíncrona depois
     res.status(201).json({
       message: 'Conta criada! Verifique seu email para confirmar a conta.',
       token,
       usuario
     })
+
+    // Envia email em background sem bloquear a resposta
+    enviarEmailConfirmacao(email, username, tokenConfirmacao)
+      .catch(e => console.log('Erro ao enviar email:', e.message))
+
   } catch (e) {
     res.status(500).json({ error: 'Erro ao registrar.' })
   }
@@ -85,17 +85,14 @@ const esqueciSenha = async (req, res) => {
     if (!email) return res.status(400).json({ error: 'Email é obrigatório.' })
 
     const usuario = await Usuario.findOne({ email })
-    // Sempre retorna sucesso para não revelar se o email existe
     if (!usuario) return res.json({ message: 'Se o email existir, você receberá as instruções.' })
 
     const token = usuario.gerarTokenRecuperacao()
     await usuario.save()
 
-    try {
-      await enviarEmailRecuperacao(email, usuario.username, token)
-    } catch (e) {
-      console.log('Erro ao enviar email:', e.message)
-    }
+    // Envia email em background
+    enviarEmailRecuperacao(email, usuario.username, token)
+      .catch(e => console.log('Erro ao enviar email:', e.message))
 
     res.json({ message: 'Se o email existir, você receberá as instruções em breve.' })
   } catch (e) {
