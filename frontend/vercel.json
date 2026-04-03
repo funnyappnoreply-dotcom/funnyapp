@@ -1,4 +1,5 @@
 {
-  "buildCommand": "npm install && ./node_modules/.bin/vite build",
-  "outputDirectory": "dist"
+  "buildCommand": "npm ci && npx --yes vite build",
+  "outputDirectory": "dist",
+  "installCommand": "echo skip"
 }
