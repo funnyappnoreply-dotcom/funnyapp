@@ -11,8 +11,20 @@
     <div v-else>
       <!-- Perfil header -->
       <div class="perfil-header card">
-        <div class="avatar-placeholder" style="width:80px;height:80px;font-size:2rem;background:var(--cinza-700)">
-          {{ usuario.username[0].toUpperCase() }}
+        <div class="avatar-wrap" style="width:80px;height:80px;flex-shrink:0">
+          <img
+            v-if="usuario.avatar"
+            :src="usuario.avatar"
+            :alt="usuario.username"
+            style="width:80px;height:80px;border-radius:50%;object-fit:cover"
+          />
+          <div
+            v-else
+            class="avatar-placeholder"
+            style="width:80px;height:80px;font-size:2rem;background:var(--cinza-700);border-radius:50%;display:flex;align-items:center;justify-content:center"
+          >
+            {{ usuario.username[0].toUpperCase() }}
+          </div>
         </div>
         <div class="perfil-info">
           <h1>@{{ usuario.username }}</h1>
