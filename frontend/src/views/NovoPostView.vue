@@ -7,17 +7,23 @@
       <div v-if="sucesso" class="alerta alerta-sucesso">{{ sucesso }}</div>
 
       <form @submit.prevent="postar">
-        <!-- Upload de imagem -->
-        <div class="upload-area" @click="$refs.inputImagem.click()" @dragover.prevent @drop.prevent="onDrop">
+        <!-- Upload de imagem ou vídeo -->
+        <div class="upload-area" @click="$refs.inputMidia.click()" @dragover.prevent @drop.prevent="onDrop">
           <div v-if="!preview" class="upload-placeholder">
             <div class="upload-icon">🖼️</div>
-            <p>Clique ou arraste uma imagem aqui</p>
-            <span>JPG, PNG, GIF, WebP — máx 10MB</span>
+            <p>Clique ou arraste uma imagem ou vídeo aqui</p>
+            <span>JPG, PNG, GIF, WebP, MP4, MOV, WebM — máx 100MB</span>
           </div>
-          <img v-else :src="preview" class="upload-preview" />
-          <div v-if="preview" class="upload-troca" @click.stop="$refs.inputImagem.click()">Trocar imagem</div>
+
+          <!-- Preview de imagem -->
+          <img v-else-if="tipoArquivo === 'imagem'" :src="preview" class="upload-preview" />
+
+          <!-- Preview de vídeo -->
+          <video v-else-if="tipoArquivo === 'video'" :src="preview" class="upload-preview" controls muted playsinline />
+
+          <div v-if="preview" class="upload-troca" @click.stop="$refs.inputMidia.click()">Trocar arquivo</div>
         </div>
-        <input ref="inputImagem" type="file" accept="image/*" hidden @change="onFile" />
+        <input ref="inputMidia" type="file" accept="image/*,video/*" hidden @change="onFile" />
 
         <div class="form-group" style="margin-top:16px">
           <label class="form-label">Legenda</label>
@@ -28,6 +34,12 @@
         <div class="form-group">
           <label class="form-label">Tags (separadas por vírgula)</label>
           <input v-model="form.tags" type="text" class="form-input" placeholder="meme, humor, gato..." />
+        </div>
+
+        <!-- Barra de progresso de upload -->
+        <div v-if="salvando && progresso > 0" class="progresso-wrap">
+          <div class="progresso-barra" :style="{ width: progresso + '%' }"></div>
+          <span class="progresso-texto">{{ progresso }}%</span>
         </div>
 
         <button type="submit" class="btn btn-amarelo btn-full btn-lg" style="margin-top:20px" :disabled="salvando || !arquivoSelecionado">
@@ -48,34 +60,43 @@ const router = useRouter()
 const form = ref({ legenda: '', tags: '' })
 const preview = ref(null)
 const arquivoSelecionado = ref(null)
+const tipoArquivo = ref(null) // 'imagem' ou 'video'
 const salvando = ref(false)
+const progresso = ref(0)
 const erro = ref(null)
 const sucesso = ref(null)
 
-const onFile = (e) => {
-  const file = e.target.files[0]
+const tiposVideo = ['video/mp4', 'video/quicktime', 'video/webm', 'video/avi']
+
+const processarArquivo = (file) => {
   if (!file) return
   arquivoSelecionado.value = file
   preview.value = URL.createObjectURL(file)
+  tipoArquivo.value = tiposVideo.includes(file.type) ? 'video' : 'imagem'
 }
 
-const onDrop = (e) => {
-  const file = e.dataTransfer.files[0]
-  if (!file?.type.startsWith('image/')) return
-  arquivoSelecionado.value = file
-  preview.value = URL.createObjectURL(file)
-}
+const onFile = (e) => processarArquivo(e.target.files[0])
+
+const onDrop = (e) => processarArquivo(e.dataTransfer.files[0])
 
 const postar = async () => {
   if (!arquivoSelecionado.value) return
   salvando.value = true
+  progresso.value = 0
   erro.value = null
   try {
     const fd = new FormData()
-    fd.append('imagem', arquivoSelecionado.value)
+    fd.append('midia', arquivoSelecionado.value) // campo 'midia' agora
     fd.append('legenda', form.value.legenda)
     fd.append('tags', form.value.tags)
-    await api.post('/posts', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+
+    await api.post('/posts', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (e) => {
+        progresso.value = Math.round((e.loaded * 100) / e.total)
+      }
+    })
+
     sucesso.value = 'Post publicado! Redirecionando...'
     setTimeout(() => router.push('/'), 1500)
   } catch (e) {
@@ -105,5 +126,18 @@ const postar = async () => {
   position: absolute; bottom: 0; left: 0; right: 0;
   background: rgba(0,0,0,0.6); text-align: center; padding: 8px;
   font-size: 0.82rem; color: var(--branco);
+}
+
+.progresso-wrap {
+  margin-top: 12px; background: var(--cinza-700); border-radius: 99px;
+  height: 8px; overflow: hidden; position: relative;
+}
+.progresso-barra {
+  height: 100%; background: var(--amarelo);
+  border-radius: 99px; transition: width 0.2s;
+}
+.progresso-texto {
+  position: absolute; right: 0; top: -20px;
+  font-size: 0.75rem; color: var(--cinza-400);
 }
 </style>
