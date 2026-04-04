@@ -1,6 +1,6 @@
 const Post = require('../models/Post')
 const Usuario = require('../models/Usuario')
-const { cloudinary } = require('../config/cloudinary')
+const { cloudinary, uploadParaCloudinary, tiposVideo } = require('../config/cloudinary')
 
 // GET /api/posts — feed público
 const feed = async (req, res) => {
@@ -24,7 +24,7 @@ const feed = async (req, res) => {
   }
 }
 
-// GET /api/posts/seguindo — feed dos usuários seguidos
+// GET /api/posts/seguindo
 const feedSeguindo = async (req, res) => {
   try {
     const usuario = await Usuario.findById(req.usuario._id)
@@ -47,27 +47,41 @@ const feedSeguindo = async (req, res) => {
   }
 }
 
-// POST /api/posts — criar post
+// POST /api/posts — criar post (imagem ou vídeo)
 const criar = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: 'Imagem é obrigatória.' })
+    if (!req.file) return res.status(400).json({ error: 'Arquivo é obrigatório.' })
 
     const { legenda, tags } = req.body
     const tagsArray = tags ? tags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean) : []
+    const isVideo = tiposVideo.includes(req.file.mimetype)
 
-    const post = await Post.create({
+    // Faz upload no Cloudinary com o tipo correto
+    const resultado = await uploadParaCloudinary(req.file.buffer, req.file.mimetype, req.file.originalname)
+
+    const dadosPost = {
       autor: req.usuario._id,
-      imagem: req.file.path,
-      imagemPublicId: req.file.filename,
+      tipo: isVideo ? 'video' : 'imagem',
       legenda: legenda || '',
       tags: tagsArray
-    })
+    }
 
+    if (isVideo) {
+      dadosPost.video = resultado.secure_url
+      dadosPost.videoPublicId = resultado.public_id
+      dadosPost.imagem = '' // thumbnail pode ser gerada pelo cloudinary futuramente
+    } else {
+      dadosPost.imagem = resultado.secure_url
+      dadosPost.imagemPublicId = resultado.public_id
+    }
+
+    const post = await Post.create(dadosPost)
     await Usuario.findByIdAndUpdate(req.usuario._id, { $inc: { totalPosts: 1 } })
     await post.populate('autor', 'username avatar')
 
     res.status(201).json({ message: 'Post criado!', post })
   } catch (e) {
+    console.error(e)
     res.status(500).json({ error: 'Erro ao criar post.' })
   }
 }
@@ -99,6 +113,10 @@ const deletar = async (req, res) => {
     if (post.imagemPublicId) {
       await cloudinary.uploader.destroy(post.imagemPublicId)
     }
+    if (post.videoPublicId) {
+      await cloudinary.uploader.destroy(post.videoPublicId, { resource_type: 'video' })
+    }
+
     await post.deleteOne()
     await Usuario.findByIdAndUpdate(req.usuario._id, { $inc: { totalPosts: -1 } })
 
@@ -182,7 +200,7 @@ const postsPorUsuario = async (req, res) => {
   }
 }
 
-// GET /api/posts/trending — posts mais curtidos
+// GET /api/posts/trending
 const trending = async (req, res) => {
   try {
     const posts = await Post.aggregate([
