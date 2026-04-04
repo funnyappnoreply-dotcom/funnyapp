@@ -1,6 +1,6 @@
 const router = require('express').Router()
 const { autenticar, autenticarOpcional } = require('../middleware/auth')
-const { upload } = require('../config/cloudinary')
+const { uploadMidia } = require('../config/cloudinary')
 const { denunciar } = require('../controllers/denunciaController')
 const {
   feed, feedSeguindo, criar, buscarPorId, deletar,
@@ -12,7 +12,7 @@ router.get('/trending', trending)
 router.get('/seguindo', autenticar, feedSeguindo)
 router.get('/usuario/:username', postsPorUsuario)
 router.get('/:id', autenticarOpcional, buscarPorId)
-router.post('/', autenticar, upload.single('imagem'), criar)
+router.post('/', autenticar, uploadMidia.single('midia'), criar) // aceita imagem ou vídeo
 router.delete('/:id', autenticar, deletar)
 router.post('/:id/curtir', autenticar, curtir)
 router.post('/:id/comentarios', autenticar, comentar)
