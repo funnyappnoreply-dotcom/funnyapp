@@ -8,8 +8,11 @@ const comentarioSchema = new mongoose.Schema({
 
 const postSchema = new mongoose.Schema({
   autor: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
-  imagem: { type: String, required: true },
+  tipo: { type: String, enum: ['imagem', 'video'], default: 'imagem' },
+  imagem: { type: String, default: '' },
   imagemPublicId: { type: String },
+  video: { type: String, default: '' },
+  videoPublicId: { type: String },
   legenda: { type: String, maxlength: 500, default: '' },
   tags: [{ type: String, maxlength: 30 }],
   curtidas: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' }],
