@@ -22,8 +22,23 @@
     </div>
 
     <router-link :to="`/post/${post._id}`">
-      <div class="post-imagem-wrap">
-        <img :src="post.imagem" :alt="post.legenda || 'Post'" class="post-imagem" loading="lazy" />
+      <div class="post-midia-wrap">
+        <video
+          v-if="post.tipo === 'video' && post.video"
+          :src="post.video"
+          class="post-midia"
+          controls
+          muted
+          playsinline
+          preload="metadata"
+        />
+        <img
+          v-else
+          :src="post.imagem"
+          :alt="post.legenda || 'Post'"
+          class="post-midia"
+          loading="lazy"
+        />
       </div>
     </router-link>
 
@@ -47,7 +62,6 @@
       <router-link v-for="tag in post.tags" :key="tag" :to="`/?tag=${tag}`" class="tag">#{{ tag }}</router-link>
     </div>
 
-    <!-- Modal denúncia -->
     <div v-if="modalDenuncia" class="modal-overlay" @click.self="modalDenuncia = false">
       <div class="modal-denuncia">
         <h3>🚩 Denunciar post</h3>
@@ -154,36 +168,29 @@ const enviarDenuncia = async () => {
 <style scoped>
 .post-card { background: var(--cinza-900); border: 1px solid var(--cinza-700); border-radius: var(--radius-md); overflow: hidden; transition: border-color var(--transition); }
 .post-card:hover { border-color: var(--cinza-600); }
-
 .post-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; }
 .autor-link { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--branco); }
 .autor-nome { font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 6px; }
 .post-data { font-size: 0.75rem; color: var(--cinza-400); }
 .badge-admin { font-size: 0.65rem; background: rgba(59,130,246,0.2); color: #60a5fa; padding: 2px 6px; border-radius: 20px; font-weight: 500; }
 .badge-superadmin { font-size: 0.65rem; background: rgba(255,214,0,0.2); color: var(--amarelo); padding: 2px 6px; border-radius: 20px; font-weight: 500; }
-
 .avatar-img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
-
 .header-acoes { display: flex; gap: 4px; }
 .btn-acao-icon { background: none; border: none; cursor: pointer; font-size: 1rem; padding: 5px 8px; border-radius: var(--radius-sm); transition: all var(--transition); color: var(--cinza-400); }
 .btn-acao-icon:hover { background: var(--cinza-800); color: var(--branco); }
 .btn-acao-icon.vermelho:hover { background: rgba(255,68,68,0.15); color: var(--vermelho); }
-
-.post-imagem-wrap { width: 100%; background: var(--cinza-800); }
-.post-imagem { width: 100%; display: block; max-height: 600px; object-fit: contain; }
-
+.post-midia-wrap { width: 100%; background: var(--cinza-800); }
+.post-midia { width: 100%; display: block; max-height: 600px; object-fit: contain; }
 .post-acoes { display: flex; align-items: center; gap: 4px; padding: 10px 14px; }
 .btn-acao { display: flex; align-items: center; gap: 5px; padding: 7px 12px; background: var(--cinza-800); border: none; border-radius: var(--radius-full); color: var(--cinza-200); font-size: 0.85rem; cursor: pointer; transition: all var(--transition); text-decoration: none; }
 .btn-acao:hover { background: var(--cinza-700); color: var(--branco); }
 .btn-acao.curtido { color: var(--vermelho); }
 .post-views { margin-left: auto; font-size: 0.78rem; color: var(--cinza-400); }
-
 .post-legenda { padding: 0 14px 8px; font-size: 0.88rem; color: var(--cinza-200); line-height: 1.5; }
 .autor-bold { font-weight: 700; color: var(--branco); }
 .post-tags { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 12px; }
 .tag { font-size: 0.8rem; color: var(--amarelo); text-decoration: none; }
 .tag:hover { text-decoration: underline; }
-
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 20px; }
 .modal-denuncia { background: var(--cinza-900); border: 1px solid var(--cinza-600); border-radius: var(--radius-lg); padding: 24px; width: 100%; max-width: 400px; }
 .modal-denuncia h3 { font-size: 1rem; margin-bottom: 16px; }
