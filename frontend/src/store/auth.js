@@ -3,28 +3,35 @@ import { ref, computed } from 'vue'
 import api from '../services/api'
 
 export const useAuthStore = defineStore('auth', () => {
-  // Token NÃO fica mais no frontend — está no cookie HttpOnly gerenciado pelo browser
-  // Apenas os dados públicos do usuário ficam em memória (sem senha, sem token)
-  const usuario = ref(JSON.parse(localStorage.getItem('usuario') || 'null'))
+  // Nada fica no localStorage — tudo em memória
+  // Token está no cookie HttpOnly (gerenciado pelo browser)
+  // Dados do usuário são buscados do servidor ao iniciar
+  const usuario = ref(null)
   const carregando = ref(false)
+  const inicializado = ref(false)
 
-  // Para saber se está autenticado, basta checar se temos dados do usuário
   const autenticado = computed(() => !!usuario.value)
 
-  const salvar = (u) => {
-    usuario.value = u
-    // Apenas dados do usuário (sem token) ficam no localStorage
-    // Isso é seguro pois não contém credenciais sensíveis
-    localStorage.setItem('usuario', JSON.stringify(u))
+  // Busca os dados do usuário logado no servidor
+  // Chamado automaticamente ao abrir o app
+  const inicializar = async () => {
+    if (inicializado.value) return
+    try {
+      const { data } = await api.get('/usuarios/me')
+      usuario.value = data.usuario
+    } catch (e) {
+      usuario.value = null // cookie inválido ou expirado
+    } finally {
+      inicializado.value = true
+    }
   }
 
   const login = async (email, senha) => {
     carregando.value = true
     try {
-      // O backend vai setar o cookie HttpOnly automaticamente na resposta
-      // O browser salva e envia esse cookie em toda requisição — o JS nunca o acessa
+      // Backend seta o cookie HttpOnly automaticamente
       const { data } = await api.post('/usuarios/login', { email, senha })
-      salvar(data.usuario)
+      usuario.value = data.usuario
       return { sucesso: true }
     } catch (e) {
       return { sucesso: false, erro: e.response?.data?.error || 'Erro ao fazer login.' }
@@ -35,7 +42,7 @@ export const useAuthStore = defineStore('auth', () => {
     carregando.value = true
     try {
       const { data } = await api.post('/usuarios/registro', dados)
-      salvar(data.usuario)
+      usuario.value = data.usuario
       return { sucesso: true }
     } catch (e) {
       const msg = e.response?.data?.errors?.[0]?.msg || e.response?.data?.error || 'Erro ao registrar.'
@@ -45,21 +52,17 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = async () => {
     try {
-      // Chama o backend para limpar o cookie HttpOnly
-      // O frontend não consegue limpar o cookie diretamente pois é HttpOnly
-      await api.post('/usuarios/logout')
-    } catch (e) {
-      // Mesmo se falhar, limpa o estado local
-    } finally {
+      await api.post('/usuarios/logout') // limpa o cookie HttpOnly no servidor
+    } catch (e) {}
+    finally {
       usuario.value = null
-      localStorage.removeItem('usuario')
+      inicializado.value = false
     }
   }
 
   const atualizarUsuario = (u) => {
-    usuario.value = u
-    localStorage.setItem('usuario', JSON.stringify(u))
+    usuario.value = u // só atualiza em memória
   }
 
-  return { usuario, carregando, autenticado, login, registrar, logout, atualizarUsuario }
+  return { usuario, carregando, inicializado, autenticado, inicializar, login, registrar, logout, atualizarUsuario }
 })
