@@ -3,7 +3,7 @@ const { body } = require('express-validator')
 const { autenticar } = require('../middleware/auth')
 const { upload } = require('../config/cloudinary')
 const {
-  registrar, login, confirmarEmail, esqueciSenha, redefinirSenha,
+  registrar, login, logout, confirmarEmail, esqueciSenha, redefinirSenha,
   perfil, atualizarPerfil, buscarUsuario, seguir, buscarUsuarios
 } = require('../controllers/authController')
 
@@ -17,6 +17,8 @@ router.post('/login', [
   body('email').isEmail().normalizeEmail(),
   body('senha').notEmpty()
 ], login)
+
+router.post('/logout', logout) // limpa o cookie HttpOnly no servidor
 
 router.get('/confirmar-email/:token', confirmarEmail)
 router.post('/esqueci-senha', esqueciSenha)
