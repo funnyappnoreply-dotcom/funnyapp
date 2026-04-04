@@ -26,7 +26,22 @@
           </router-link>
         </div>
 
-        <img :src="post.imagem" :alt="post.legenda" class="post-imagem" />
+        <!-- Vídeo -->
+        <video
+          v-if="post.tipo === 'video' && post.video"
+          :src="post.video"
+          class="post-midia"
+          controls
+          playsinline
+          preload="metadata"
+        />
+        <!-- Imagem -->
+        <img
+          v-else
+          :src="post.imagem"
+          :alt="post.legenda"
+          class="post-midia"
+        />
 
         <div class="post-acoes">
           <button :class="['btn-acao', { curtido: jaCurtiu }]" @click="curtir">
@@ -140,7 +155,7 @@ onMounted(async () => {
 .post-data { font-size: 0.78rem; color: var(--cinza-400); }
 .avatar-img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; }
 .avatar-img-sm { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
-.post-imagem { width: 100%; display: block; max-height: 700px; object-fit: contain; background: var(--cinza-800); }
+.post-midia { width: 100%; display: block; max-height: 700px; object-fit: contain; background: var(--cinza-800); }
 .post-acoes { display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
 .btn-acao { background: var(--cinza-800); border: none; border-radius: var(--radius-full); padding: 8px 16px; cursor: pointer; font-size: 0.9rem; color: var(--cinza-200); transition: all var(--transition); }
 .btn-acao:hover { background: var(--cinza-700); color: var(--branco); }
