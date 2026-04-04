@@ -3,11 +3,11 @@ const Usuario = require('../models/Usuario')
 
 const autenticar = async (req, res, next) => {
   try {
-    const auth = req.headers.authorization
-    if (!auth?.startsWith('Bearer '))
+    // Lê o token do cookie HttpOnly (não acessível via JS no browser)
+    const token = req.cookies?.token
+    if (!token)
       return res.status(401).json({ error: 'Token não fornecido.' })
 
-    const token = auth.split(' ')[1]
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
     const usuario = await Usuario.findById(decoded.id)
     if (!usuario) return res.status(401).json({ error: 'Usuário não encontrado.' })
@@ -24,9 +24,8 @@ const autenticar = async (req, res, next) => {
 
 const autenticarOpcional = async (req, res, next) => {
   try {
-    const auth = req.headers.authorization
-    if (auth?.startsWith('Bearer ')) {
-      const token = auth.split(' ')[1]
+    const token = req.cookies?.token
+    if (token) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET)
       const usuario = await Usuario.findById(decoded.id)
       if (usuario && !usuario.banido) req.usuario = usuario
