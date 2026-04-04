@@ -7,6 +7,13 @@ const gerarToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, {
   expiresIn: process.env.JWT_EXPIRES_IN || '7d'
 })
 
+const cookieOpcoes = {
+  httpOnly: true,                              // JS do browser NÃO consegue ler — protege de XSS
+  secure: process.env.NODE_ENV === 'production', // HTTPS only em produção
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' necessário para cross-site (Railway + Vercel)
+  maxAge: 7 * 24 * 60 * 60 * 1000             // 7 dias em ms
+}
+
 // POST /api/usuarios/registro
 const registrar = async (req, res) => {
   try {
@@ -26,14 +33,14 @@ const registrar = async (req, res) => {
 
     const token = gerarToken(usuario._id)
 
-    // Responde imediatamente — email é enviado de forma assíncrona depois
+    // Seta o token como cookie HttpOnly — não fica exposto no JS do browser
+    res.cookie('token', token, cookieOpcoes)
+
     res.status(201).json({
       message: 'Conta criada! Verifique seu email para confirmar a conta.',
-      token,
       usuario
     })
 
-    // Envia email em background sem bloquear a resposta
     enviarEmailConfirmacao(email, username, tokenConfirmacao)
       .catch(e => console.log('Erro ao enviar email:', e.message))
 
@@ -56,10 +63,20 @@ const login = async (req, res) => {
       return res.status(403).json({ error: `Conta banida. Motivo: ${usuario.motivoBanimento}` })
 
     const token = gerarToken(usuario._id)
-    res.json({ message: 'Login realizado!', token, usuario: usuario.toJSON() })
+
+    // Seta o token como cookie HttpOnly
+    res.cookie('token', token, cookieOpcoes)
+
+    res.json({ message: 'Login realizado!', usuario: usuario.toJSON() })
   } catch (e) {
     res.status(500).json({ error: 'Erro ao fazer login.' })
   }
+}
+
+// POST /api/usuarios/logout
+const logout = (req, res) => {
+  res.clearCookie('token', cookieOpcoes)
+  res.json({ message: 'Logout realizado!' })
 }
 
 // GET /api/usuarios/confirmar-email/:token
@@ -90,7 +107,6 @@ const esqueciSenha = async (req, res) => {
     const token = usuario.gerarTokenRecuperacao()
     await usuario.save()
 
-    // Envia email em background
     enviarEmailRecuperacao(email, usuario.username, token)
       .catch(e => console.log('Erro ao enviar email:', e.message))
 
@@ -202,6 +218,6 @@ const buscarUsuarios = async (req, res) => {
 }
 
 module.exports = {
-  registrar, login, confirmarEmail, esqueciSenha, redefinirSenha,
+  registrar, login, logout, confirmarEmail, esqueciSenha, redefinirSenha,
   perfil, atualizarPerfil, buscarUsuario, seguir, buscarUsuarios
 }
