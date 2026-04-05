@@ -7,23 +7,17 @@
       <div v-if="sucesso" class="alerta alerta-sucesso">{{ sucesso }}</div>
 
       <form @submit.prevent="postar">
-        <!-- Upload de imagem ou vídeo -->
         <div class="upload-area" @click="$refs.inputMidia.click()" @dragover.prevent @drop.prevent="onDrop">
           <div v-if="!preview" class="upload-placeholder">
             <div class="upload-icon">🖼️</div>
             <p>Clique ou arraste uma imagem ou vídeo aqui</p>
             <span>JPG, PNG, GIF, WebP, MP4, MOV, WebM — máx 100MB</span>
           </div>
-
-          <!-- Preview de imagem -->
           <img v-else-if="tipoArquivo === 'imagem'" :src="preview" class="upload-preview" />
-
-          <!-- Preview de vídeo -->
           <video v-else-if="tipoArquivo === 'video'" :src="preview" class="upload-preview" controls muted playsinline />
-
           <div v-if="preview" class="upload-troca" @click.stop="$refs.inputMidia.click()">Trocar arquivo</div>
         </div>
-        <input ref="inputMidia" type="file" accept="image/*,video/*" hidden @change="onFile" />
+        <input ref="inputMidia" type="file" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime,video/webm,video/avi" hidden @change="onFile" />
 
         <div class="form-group" style="margin-top:16px">
           <label class="form-label">Legenda</label>
@@ -36,7 +30,6 @@
           <input v-model="form.tags" type="text" class="form-input" placeholder="meme, humor, gato..." />
         </div>
 
-        <!-- Barra de progresso de upload -->
         <div v-if="salvando && progresso > 0" class="progresso-wrap">
           <div class="progresso-barra" :style="{ width: progresso + '%' }"></div>
           <span class="progresso-texto">{{ progresso }}%</span>
@@ -60,7 +53,7 @@ const router = useRouter()
 const form = ref({ legenda: '', tags: '' })
 const preview = ref(null)
 const arquivoSelecionado = ref(null)
-const tipoArquivo = ref(null) // 'imagem' ou 'video'
+const tipoArquivo = ref(null)
 const salvando = ref(false)
 const progresso = ref(0)
 const erro = ref(null)
@@ -76,7 +69,6 @@ const processarArquivo = (file) => {
 }
 
 const onFile = (e) => processarArquivo(e.target.files[0])
-
 const onDrop = (e) => processarArquivo(e.dataTransfer.files[0])
 
 const postar = async () => {
@@ -86,7 +78,7 @@ const postar = async () => {
   erro.value = null
   try {
     const fd = new FormData()
-    fd.append('midia', arquivoSelecionado.value) // campo 'midia' agora
+    fd.append('midia', arquivoSelecionado.value)
     fd.append('legenda', form.value.legenda)
     fd.append('tags', form.value.tags)
 
