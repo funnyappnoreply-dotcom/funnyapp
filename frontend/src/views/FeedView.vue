@@ -7,12 +7,10 @@
           Filtrando: <span>#{{ tag }}</span>
           <button @click="limparTag">×</button>
         </div>
-        <!-- Lupa -->
-        <button class="btn-lupa" @click="buscaAberta = !buscaAberta" :class="{ ativo: buscaAberta }">🔍</button>
+        <button class="btn-lupa so-mobile" @click="buscaAberta = !buscaAberta" :class="{ ativo: buscaAberta }">🔍</button>
       </div>
     </div>
 
-    <!-- Painel de busca (aparece abaixo do header) -->
     <div v-if="buscaAberta" class="busca-painel">
       <input
         ref="inputBusca"
@@ -81,7 +79,6 @@ const pagina = ref(1)
 const temMais = ref(false)
 const tag = ref(route.query.tag || '')
 
-// Busca
 const buscaAberta = ref(false)
 const query = ref('')
 const resultados = ref([])
@@ -113,7 +110,6 @@ watch(buscaAberta, async (val) => {
   }
 })
 
-// Feed
 const carregar = async (reset = false) => {
   if (reset) { pagina.value = 1; posts.value = [] }
   carregando.value = true
@@ -167,6 +163,10 @@ onUnmounted(() => window.removeEventListener('refresh-feed', refreshFeed))
   transition: background 0.15s;
 }
 .btn-lupa:hover, .btn-lupa.ativo { background: var(--cinza-700); }
+
+@media (min-width: 769px) {
+  .so-mobile { display: none; }
+}
 
 .busca-painel {
   background: var(--cinza-900);
