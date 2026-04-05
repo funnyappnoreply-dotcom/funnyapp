@@ -21,19 +21,20 @@
       </div>
     </div>
 
-    <router-link :to="`/post/${post._id}`">
+    <!-- Vídeo fora do router-link para não bloquear controles -->
+    <div class="post-midia-wrap" v-if="post.tipo === 'video' && post.video">
+      <video
+        :src="post.video"
+        class="post-midia"
+        controls
+        playsinline
+        preload="metadata"
+      />
+    </div>
+    <!-- Imagem dentro do router-link -->
+    <router-link v-else :to="`/post/${post._id}`">
       <div class="post-midia-wrap">
-        <video
-          v-if="post.tipo === 'video' && post.video"
-          :src="post.video"
-          class="post-midia"
-          controls
-          muted
-          playsinline
-          preload="metadata"
-        />
         <img
-          v-else
           :src="post.imagem"
           :alt="post.legenda || 'Post'"
           class="post-midia"
