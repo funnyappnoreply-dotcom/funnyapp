@@ -24,24 +24,12 @@
               <div class="post-data">{{ formatarData(post.createdAt) }}</div>
             </div>
           </router-link>
+          <!-- Botão editar só para o dono do post -->
+          <button v-if="ehMeu" class="btn-editar" @click="abrirEdicao">✏️ Editar</button>
         </div>
 
-        <!-- Vídeo -->
-        <video
-          v-if="post.tipo === 'video' && post.video"
-          :src="post.video"
-          class="post-midia"
-          controls
-          playsinline
-          preload="metadata"
-        />
-        <!-- Imagem -->
-        <img
-          v-else
-          :src="post.imagem"
-          :alt="post.legenda"
-          class="post-midia"
-        />
+        <video v-if="post.tipo === 'video' && post.video" :src="post.video" class="post-midia" controls playsinline preload="metadata" />
+        <img v-else :src="post.imagem" :alt="post.legenda" class="post-midia" />
 
         <div class="post-acoes">
           <button :class="['btn-acao', { curtido: jaCurtiu }]" @click="curtir">
@@ -60,7 +48,6 @@
 
         <div class="comentarios-section">
           <h3>Comentários ({{ post.comentarios?.length || 0 }})</h3>
-
           <div v-if="auth.autenticado" class="comentar-form">
             <input v-model="novoComentario" type="text" class="form-input" placeholder="Adicione um comentário..." maxlength="300" @keyup.enter="comentar" />
             <button class="btn btn-amarelo btn-sm" @click="comentar" :disabled="enviando || !novoComentario.trim()">
@@ -71,7 +58,6 @@
           <div v-else class="comentar-login">
             <router-link to="/login">Entre para comentar</router-link>
           </div>
-
           <div class="comentarios-lista">
             <div v-for="c in post.comentarios" :key="c._id" class="comentario">
               <img v-if="c.autor?.avatar" :src="c.autor.avatar" class="avatar-img-sm" />
@@ -88,11 +74,35 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal de edição -->
+    <div v-if="modalEdicao" class="modal-overlay" @click.self="modalEdicao = false">
+      <div class="modal-box">
+        <h3>✏️ Editar post</h3>
+        <div v-if="erroEdicao" class="alerta alerta-erro" style="margin-bottom:12px">{{ erroEdicao }}</div>
+        <div class="form-group" style="margin-top:16px">
+          <label class="form-label">Legenda</label>
+          <textarea v-model="formEdicao.legenda" class="form-textarea" maxlength="500" placeholder="Adicione uma legenda..."></textarea>
+          <span style="font-size:0.75rem;color:var(--cinza-400)">{{ formEdicao.legenda.length }}/500</span>
+        </div>
+        <div class="form-group" style="margin-top:12px">
+          <label class="form-label">Tags (separadas por vírgula)</label>
+          <input v-model="formEdicao.tags" type="text" class="form-input" placeholder="meme, humor, gato..." />
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+          <button class="btn btn-outline btn-sm" @click="modalEdicao = false">Cancelar</button>
+          <button class="btn btn-amarelo btn-sm" @click="salvarEdicao" :disabled="salvandoEdicao">
+            <span v-if="salvandoEdicao" class="spinner" style="width:14px;height:14px;border-width:2px;border-top-color:black"></span>
+            <span v-else>Salvar</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../store/auth'
 import api from '../services/api'
@@ -105,8 +115,37 @@ const novoComentario = ref('')
 const enviando = ref(false)
 const jaCurtiu = ref(false)
 const totalCurtidas = ref(0)
+const modalEdicao = ref(false)
+const formEdicao = ref({ legenda: '', tags: '' })
+const salvandoEdicao = ref(false)
+const erroEdicao = ref(null)
+
+const ehMeu = computed(() => auth.usuario?._id === post.value?.autor?._id)
 
 const formatarData = (d) => new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+
+const abrirEdicao = () => {
+  formEdicao.value.legenda = post.value.legenda || ''
+  formEdicao.value.tags = post.value.tags?.join(', ') || ''
+  erroEdicao.value = null
+  modalEdicao.value = true
+}
+
+const salvarEdicao = async () => {
+  salvandoEdicao.value = true
+  erroEdicao.value = null
+  try {
+    const { data } = await api.put(`/posts/${post.value._id}`, {
+      legenda: formEdicao.value.legenda,
+      tags: formEdicao.value.tags
+    })
+    post.value.legenda = data.post.legenda
+    post.value.tags = data.post.tags
+    modalEdicao.value = false
+  } catch (e) {
+    erroEdicao.value = e.response?.data?.error || 'Erro ao salvar.'
+  } finally { salvandoEdicao.value = false }
+}
 
 const curtir = async () => {
   if (!auth.autenticado) { window.location.href = '/login'; return }
@@ -149,12 +188,14 @@ onMounted(async () => {
 .btn-voltar { background: none; border: none; color: var(--cinza-200); cursor: pointer; font-size: 0.9rem; margin-bottom: 16px; padding: 0; transition: color var(--transition); }
 .btn-voltar:hover { color: var(--branco); }
 .post-detalhe { overflow: hidden; }
-.post-header { display: flex; align-items: center; padding: 14px 16px; }
+.post-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; }
 .autor-link { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--branco); }
 .autor-nome { font-weight: 700; font-size: 0.95rem; }
 .post-data { font-size: 0.78rem; color: var(--cinza-400); }
 .avatar-img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; }
 .avatar-img-sm { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.btn-editar { background: rgba(255,214,0,0.15); border: 1px solid rgba(255,214,0,0.3); color: var(--amarelo); padding: 6px 12px; border-radius: var(--radius-sm); font-size: 0.82rem; cursor: pointer; transition: all var(--transition); }
+.btn-editar:hover { background: rgba(255,214,0,0.25); }
 .post-midia { width: 100%; display: block; max-height: 700px; object-fit: contain; background: var(--cinza-800); }
 .post-acoes { display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
 .btn-acao { background: var(--cinza-800); border: none; border-radius: var(--radius-full); padding: 8px 16px; cursor: pointer; font-size: 0.9rem; color: var(--cinza-200); transition: all var(--transition); }
@@ -180,4 +221,8 @@ onMounted(async () => {
 .btn-del-comentario:hover { color: var(--vermelho); }
 .loading-wrap { display: flex; justify-content: center; padding: 80px; }
 .vazio { text-align: center; padding: 80px; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 20px; }
+.modal-box { background: var(--cinza-900); border: 1px solid var(--cinza-600); border-radius: var(--radius-lg); padding: 24px; width: 100%; max-width: 420px; }
+.modal-box h3 { font-size: 1rem; margin-bottom: 4px; }
+.alerta-erro { background: rgba(255,68,68,0.1); color: var(--vermelho); border: 1px solid rgba(255,68,68,0.3); padding: 10px 14px; border-radius: var(--radius-sm); font-size: 0.85rem; }
 </style>
