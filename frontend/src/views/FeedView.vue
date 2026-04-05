@@ -33,7 +33,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PostCard from '../components/PostCard.vue'
 import api from '../services/api'
@@ -61,6 +61,7 @@ const carregar = async (reset = false) => {
 
 const carregarMais = () => { pagina.value++; carregar() }
 const limparTag = () => { tag.value = ''; router.push('/'); carregar(true) }
+
 const deletarPost = async (id) => {
   if (!confirm('Deletar este post?')) return
   try {
@@ -70,7 +71,12 @@ const deletarPost = async (id) => {
 }
 
 watch(() => route.query.tag, (nova) => { tag.value = nova || ''; carregar(true) })
+
+const refreshFeed = () => carregar(true)
+window.addEventListener('refresh-feed', refreshFeed)
+
 onMounted(() => carregar())
+onUnmounted(() => window.removeEventListener('refresh-feed', refreshFeed))
 </script>
 
 <style scoped>
