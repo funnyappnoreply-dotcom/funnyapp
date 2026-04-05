@@ -3,7 +3,7 @@ const { autenticar, autenticarOpcional } = require('../middleware/auth')
 const { uploadMidia } = require('../config/cloudinary')
 const { denunciar } = require('../controllers/denunciaController')
 const {
-  feed, feedSeguindo, criar, buscarPorId, deletar,
+  feed, feedSeguindo, criar, buscarPorId, deletar, editar,
   curtir, comentar, deletarComentario, postsPorUsuario, trending
 } = require('../controllers/postController')
 
@@ -13,6 +13,7 @@ router.get('/seguindo', autenticar, feedSeguindo)
 router.get('/usuario/:username', postsPorUsuario)
 router.get('/:id', autenticarOpcional, buscarPorId)
 router.post('/', autenticar, uploadMidia.any(), criar)
+router.put('/:id', autenticar, editar)
 router.delete('/:id', autenticar, deletar)
 router.post('/:id/curtir', autenticar, curtir)
 router.post('/:id/comentarios', autenticar, comentar)
