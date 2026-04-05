@@ -90,8 +90,24 @@ const deletar = async (req, res) => {
     if (post.videoPublicId) await cloudinary.uploader.destroy(post.videoPublicId, { resource_type: 'video' })
     await post.deleteOne()
     await Usuario.findByIdAndUpdate(req.usuario._id, { $inc: { totalPosts: -1 } })
-    res.json({ message: 'Post deletado.' })
+    res.json({ message: 'Post deletado.' }) 
   } catch (e) { res.status(500).json({ error: 'Erro ao deletar post.' }) }
+}
+
+const editar = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id)
+    if (!post) return res.status(404).json({ error: 'Post não encontrado.' })
+    if (!post.autor.equals(req.usuario._id))
+      return res.status(403).json({ error: 'Sem permissão.' })
+
+    const { legenda, tags } = req.body
+    if (legenda !== undefined) post.legenda = legenda
+    if (tags !== undefined) post.tags = tags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean)
+
+    await post.save()
+    res.json({ message: 'Post atualizado!', post })
+  } catch (e) { res.status(500).json({ error: 'Erro ao editar post.' }) }
 }
 
 const curtir = async (req, res) => {
@@ -162,4 +178,4 @@ const trending = async (req, res) => {
   } catch (e) { res.status(500).json({ error: 'Erro ao buscar trending.' }) }
 }
 
-module.exports = { feed, feedSeguindo, criar, buscarPorId, deletar, curtir, comentar, deletarComentario, postsPorUsuario, trending }
+module.exports = { feed, feedSeguindo, criar, buscarPorId, deletar, editar, curtir, comentar, deletarComentario, postsPorUsuario, trending }
