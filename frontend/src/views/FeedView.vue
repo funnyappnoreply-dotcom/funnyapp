@@ -2,11 +2,46 @@
   <div class="feed-page">
     <div class="feed-header">
       <h1>Feed</h1>
-      <div v-if="tag" class="tag-filtro">
-        Filtrando: <span>#{{ tag }}</span>
-        <button @click="limparTag">×</button>
+      <div class="header-direita">
+        <div v-if="tag" class="tag-filtro">
+          Filtrando: <span>#{{ tag }}</span>
+          <button @click="limparTag">×</button>
+        </div>
+        <!-- Lupa -->
+        <button class="btn-lupa" @click="buscaAberta = !buscaAberta" :class="{ ativo: buscaAberta }">🔍</button>
       </div>
     </div>
+
+    <!-- Painel de busca (aparece abaixo do header) -->
+    <div v-if="buscaAberta" class="busca-painel">
+      <input
+        ref="inputBusca"
+        v-model="query"
+        type="text"
+        class="busca-input"
+        placeholder="Buscar usuário..."
+        @input="buscar"
+      />
+      <div v-if="buscando" class="busca-status">Buscando...</div>
+      <div v-else-if="query && resultados.length === 0" class="busca-status">Nenhum usuário encontrado.</div>
+      <div class="busca-resultados">
+        <router-link
+          v-for="u in resultados"
+          :key="u._id"
+          :to="`/u/${u.username}`"
+          class="busca-item"
+          @click="buscaAberta = false; query = ''; resultados = []"
+        >
+          <img v-if="u.avatar" :src="u.avatar" class="busca-avatar" />
+          <div v-else class="busca-avatar-placeholder">{{ u.username[0].toUpperCase() }}</div>
+          <div>
+            <div class="busca-username">@{{ u.username }}</div>
+            <div v-if="u.bio" class="busca-bio">{{ u.bio }}</div>
+          </div>
+        </router-link>
+      </div>
+    </div>
+
     <div v-if="carregando && posts.length === 0" class="loading-wrap">
       <div class="spinner" style="width:32px;height:32px;border-width:3px"></div>
     </div>
@@ -33,7 +68,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PostCard from '../components/PostCard.vue'
 import api from '../services/api'
@@ -46,6 +81,39 @@ const pagina = ref(1)
 const temMais = ref(false)
 const tag = ref(route.query.tag || '')
 
+// Busca
+const buscaAberta = ref(false)
+const query = ref('')
+const resultados = ref([])
+const buscando = ref(false)
+const inputBusca = ref(null)
+
+let debounce = null
+const buscar = () => {
+  clearTimeout(debounce)
+  if (!query.value.trim()) { resultados.value = []; return }
+  buscando.value = true
+  debounce = setTimeout(async () => {
+    try {
+      const { data } = await api.get(`/usuarios/buscar?q=${query.value}`)
+      resultados.value = data.usuarios
+    } catch {
+      resultados.value = []
+    } finally { buscando.value = false }
+  }, 400)
+}
+
+watch(buscaAberta, async (val) => {
+  if (val) {
+    await nextTick()
+    inputBusca.value?.focus()
+  } else {
+    query.value = ''
+    resultados.value = []
+  }
+})
+
+// Feed
 const carregar = async (reset = false) => {
   if (reset) { pagina.value = 1; posts.value = [] }
   carregando.value = true
@@ -81,8 +149,58 @@ onUnmounted(() => window.removeEventListener('refresh-feed', refreshFeed))
 
 <style scoped>
 .feed-page { max-width: 680px; margin: 0 auto; padding: 24px 16px; }
-.feed-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+
+.feed-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+  position: sticky; top: 0; z-index: 10;
+  background: var(--preto);
+  padding: 12px 0;
+}
 .feed-header h1 { font-family: var(--fonte-titulo); font-size: 1.5rem; }
+.header-direita { display: flex; align-items: center; gap: 10px; }
+
+.btn-lupa {
+  background: var(--cinza-800); border: none; border-radius: 50%;
+  width: 38px; height: 38px; font-size: 1.1rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.btn-lupa:hover, .btn-lupa.ativo { background: var(--cinza-700); }
+
+.busca-painel {
+  background: var(--cinza-900);
+  border: 1px solid var(--cinza-700);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-bottom: 16px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.busca-input {
+  width: 100%; background: var(--cinza-800);
+  border: 1px solid var(--cinza-600); border-radius: 999px;
+  padding: 10px 16px; color: var(--branco); font-size: 0.95rem; outline: none;
+  box-sizing: border-box;
+}
+.busca-input:focus { border-color: var(--amarelo); }
+.busca-status { text-align: center; color: var(--cinza-400); font-size: 0.85rem; padding: 8px 0; }
+.busca-resultados { display: flex; flex-direction: column; gap: 4px; }
+.busca-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px; border-radius: var(--radius-md);
+  text-decoration: none; color: var(--branco); transition: background 0.15s;
+}
+.busca-item:hover { background: var(--cinza-800); }
+.busca-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.busca-avatar-placeholder {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--cinza-700);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem; font-weight: 700; flex-shrink: 0;
+}
+.busca-username { font-size: 0.88rem; font-weight: 600; }
+.busca-bio { font-size: 0.75rem; color: var(--cinza-400); margin-top: 2px; }
+
 .tag-filtro { display: flex; align-items: center; gap: 8px; background: var(--cinza-800); padding: 6px 12px; border-radius: var(--radius-full); font-size: 0.85rem; color: var(--amarelo); }
 .tag-filtro button { background: none; border: none; cursor: pointer; color: var(--cinza-400); font-size: 1rem; line-height: 1; }
 .posts-grid { display: flex; flex-direction: column; gap: 16px; }
