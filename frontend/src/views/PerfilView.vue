@@ -51,7 +51,8 @@
         </div>
         <div v-else class="posts-grid">
           <router-link v-for="post in meusPosts" :key="post._id" :to="`/post/${post._id}`" class="grid-item">
-            <img :src="post.imagem" />
+            <video v-if="post.tipo === 'video'" :src="post.video" class="grid-midia" muted preload="metadata" />
+            <img v-else :src="post.imagem" class="grid-midia" />
           </router-link>
         </div>
       </div>
@@ -207,8 +208,8 @@ onMounted(async () => {
 .posts-section h3 { font-size: 0.95rem; color: var(--cinza-200); margin-bottom: 14px; }
 .posts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; border-radius: var(--radius-sm); overflow: hidden; }
 .grid-item { aspect-ratio: 1; overflow: hidden; display: block; }
-.grid-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; }
-.grid-item:hover img { transform: scale(1.05); }
+.grid-midia { width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; }
+.grid-item:hover .grid-midia { transform: scale(1.05); }
 .vazio { text-align: center; color: var(--cinza-400); font-size: 0.85rem; padding: 20px; }
 
 @media (max-width: 768px) {
